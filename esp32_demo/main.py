@@ -1,10 +1,24 @@
 import rclpy
+from typing import Iterable
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.qos import qos_profile_sensor_data
+import numpy as np
 
 from ros2_esp32_interfaces.msg import PinValues
 
+def generator_alternating() -> Iterable:
+    val = False
+    while True:
+        yield int(val)
+        val = ~val
+
+def generator_sine() -> Iterable:
+    t = 0
+    while True:
+        yield np.sin(t)
+        t += np.pi/8
+        t = t-2*np.pi if t > 2*np.pi else t
 
 class PubNode(Node):
     def __init__(self):
@@ -18,7 +32,6 @@ class PubNode(Node):
         self.publisher_.publish(msg)
         self.get_logger().info('Publishing: "%s"' % msg.values)
 
-
 class SubNode(Node):
     def __init__(self):
         super().__init__('subscriber')
@@ -26,7 +39,6 @@ class SubNode(Node):
 
     def sub_callback(self, msg):
         self.get_logger().info('Receiving: "%s"' % msg.values)
-
 
 def main(args=None):
     rclpy.init(args=args)
