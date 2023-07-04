@@ -5,9 +5,8 @@ from rclpy.executors import SingleThreadedExecutor
 from rclpy.qos import qos_profile_sensor_data
 import numpy as np
 import time
-import matplotlib.pyplot as plt
-
-from ros2_esp32_interfaces.msg import PinValues
+#import matplotlib.pyplot as plt
+from ros2_esp32_messages.msg import PinValues
 
 def generator_alternating() -> Generator:
     val = False
@@ -16,31 +15,33 @@ def generator_alternating() -> Generator:
         val = not val
 
 def generator_sine(ampl: float, shift: float) -> Generator:
-    t = 0
+    time_max = 10
+    time_start = time.time()
     while True:
+        delta_time = time.time() - time_start
+        t = 2*np.pi/time_max * delta_time
         yield ampl * np.sin(t) + shift
-        t += np.pi/8
-        t = t-2*np.pi if t > 2*np.pi else t
+
 
 class PubNode(Node):
     def __init__(self, vals: list, pin_out: int, gen: Generator):
         super().__init__('publisher')
         self.publisher_ = self.create_publisher(PinValues, '/esp32_write_pins', 10)
-        self.timer = self.create_timer(2, self.timer_callback)
+        self.timer = self.create_timer(1, self.timer_callback)
         self.vals = vals
         self.pin_out = pin_out
         self.data_gen = gen
-        
 
     def timer_callback(self):
         msg = PinValues()
 
-        msg.values = np.zeros(36)
+        msg.values = np.zeros(40)
         val = next(self.data_gen)
         self.vals.append([time.time(), val])
         msg.values[self.pin_out] = val
         self.publisher_.publish(msg)
         self.get_logger().info('Publishing: "%s"' % msg.values)
+
 
 class SubNode(Node):
     def __init__(self, vals: list, pin_in: int):
@@ -63,6 +64,11 @@ def plot_values(vals_out, vals_in) -> None:
     plt.legend()
     plt.savefig('test.png')
 
+def save_values(vals_sent, vals_rec):
+    vals = np.array([vals_sent, vals_rec], dtype=object)
+    with open('src/esp32_demo/data/vals.csv', 'wb') as f:
+        np.save(f, vals)
+
 def run_experiment() -> None:
     vals_out, vals_in = [], []
     rclpy.init()
@@ -78,8 +84,8 @@ def run_experiment() -> None:
             #executor.spin()
             start = time.time()
             while True:
-                executor.spin_once(0.1)
-                if time.time() - start > 30:
+                executor.spin_once()
+                if time.time() - start > 10:
                     break
         finally:
             executor.shutdown()
@@ -91,7 +97,7 @@ def run_experiment() -> None:
 
     print(vals_out)
     print(vals_in)
-    plot_values(vals_out, vals_in)
+    save_values(vals_out, vals_in)
 
 def main():
     run_experiment()
