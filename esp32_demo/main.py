@@ -7,6 +7,7 @@ import numpy as np
 import time
 #import matplotlib.pyplot as plt
 from ros2_esp32_messages.msg import PinValues
+from ros2_esp32_messages.srv import SetConfig
 
 def generator_alternating() -> Generator:
     val = False
@@ -22,6 +23,23 @@ def generator_sine(ampl: float, shift: float) -> Generator:
         t = 2*np.pi/time_max * delta_time
         yield ampl * np.sin(t) + shift
 
+class ServiceNode(Node):
+    def __init__(self):
+        super().__init__('service')
+        self.cli = self.create_client(SetConfig, '/esp32_set_config')
+        while not self.cli.wait_for_service(timeout_sec=5.):
+            self.get_logger().info('service not available, waiting again...')
+        self.req = SetConfig.Request()
+
+    def set_pins(self, pin_nums: list, pin_modes: list):
+        self.req.read_only = False;
+        self.req.pin_modes = np.zeros(40, dtype=np.uint8)
+        for pin_num, pin_mode in zip(pin_nums, pin_modes):
+            self.req.pin_modes[pin_num] = pin_mode
+
+        self.future = self.cli.call_async(self.req)
+        rclpy.spin_until_future_complete(self, self.future)
+        return self.future.result()
 
 class PubNode(Node):
     def __init__(self, vals: list, pin_out: int, gen: Generator):
@@ -73,6 +91,8 @@ def run_experiment() -> None:
     vals_out, vals_in = [], []
     rclpy.init()
     try:
+        srv = ServiceNode()
+        print(srv.set_pins([25, 33], [3, 4]))
         pub = PubNode(vals_out, 25, generator_sine(100, 100))
         sub = SubNode(vals_in, 33)
 
@@ -89,6 +109,7 @@ def run_experiment() -> None:
                     break
         finally:
             executor.shutdown()
+            srv.destroy_node()
             pub.destroy_node()
             sub.destroy_node()
 
