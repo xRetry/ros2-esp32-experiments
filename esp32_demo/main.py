@@ -58,8 +58,8 @@ class PubNode(Node):
         self.timer = self.create_timer(1, self.timer_callback)
         self.vals = vals
         self.pin_out = pin_out
-        #self.data_gen = generator_sine(ampl, shift)
-        self.data_gen = generator_const(100)
+        self.data_gen = generator_sine(ampl, shift)
+        #self.data_gen = generator_const(100)
         #self.data_gen = generator_const(0)
         self.ampl = ampl
         self.shift = shift
