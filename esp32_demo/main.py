@@ -55,7 +55,7 @@ class PubNode(Node):
     def __init__(self, vals: list, pin_out: int, ampl: float, shift: float):
         super().__init__('publisher')
         self.publisher_ = self.create_publisher(PinValues, '/esp32_write_pins', 10)
-        self.timer = self.create_timer(1, self.timer_callback)
+        self.timer = self.create_timer(0.0075, self.timer_callback)
         self.vals = vals
         self.pin_out = pin_out
         self.data_gen = generator_sine(ampl, shift)
@@ -108,7 +108,7 @@ def save_values(vals_sent, vals_rec, ampl, shift):
         ampl=ampl,
         shift=shift
     )
-    with open('src/esp32_demo/data/vals.json', 'w') as f:
+    with open('src/ros2-esp32-experiments/data/vals.json', 'w') as f:
         json.dump(vals, f)
 
 def run_experiment() -> None:

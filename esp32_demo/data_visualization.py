@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 
 def load_data():
-    with open('src/esp32_demo/data/vals.json', 'r') as f:
+    with open('data/vals.json', 'r') as f:
         data = json.load(f)
 
     return np.array(data['sent']), np.array(data['received']), data['ampl'], data['shift']
