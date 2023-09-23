@@ -18,14 +18,19 @@ def calibrate_data(vals_sent, vals_rec):
     vals_sent[:, 0] -= t_min
     return vals_sent, vals_rec
 
-def main():
+def window_rms(signal, window_size):
+    a2 = np.power(signal,2)
+    window = np.ones(window_size)/float(window_size)
+    return np.sqrt(np.convolve(a2, window, 'valid'))
+
+def plot_timeline():
 
     rates = [
         ['2s', '500ms'], 
         ['50ms', '1ms']
     ]
 
-    _, axs = plt.subplots(2, 2, figsize=(10, 6), sharex='all', sharey='all')
+    _, axs = plt.subplots(2, 2, figsize=(10, 6), sharex='all', sharey='all') # pyright: ignore[reportGeneralTypeIssues]
     for i in range(len(rates)):
         for j in range(len(rates[0])):
             vals_sent, vals_rec, _, _ = load_data(f'data/vals_{rates[i][j]}.json')
@@ -41,7 +46,6 @@ def main():
             plt.gca().legend()
     plt.tight_layout()
     plt.show()
-    
 
 if __name__ == '__main__':
-    main()
+    plot_timeline()
